@@ -32,6 +32,8 @@ func (s *Cleaner) cleanTorrentData(ctx context.Context, hash string) (int, error
 }
 
 func (s *Cleaner) Clean() error {
+	start := time.Now()
+	log.Info("Start cleaning...")
 	for {
 		t, err := s.cleanChunk()
 		if err != nil {
@@ -41,6 +43,7 @@ func (s *Cleaner) Clean() error {
 			break
 		}
 	}
+	log.Infof("Finish cleaning elapsed time=%v", time.Since(start))
 	return nil
 }
 
