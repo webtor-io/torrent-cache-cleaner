@@ -37,11 +37,16 @@ func NewS3Storage(c *cli.Context, cl *S3Client) *S3Storage {
 	}
 }
 
-func (s *S3Storage) GetTouches(ctx context.Context) ([]*s3.Object, bool, error) {
-	list, err := s.cl.Get().ListObjectsWithContext(ctx, &s3.ListObjectsInput{
+func (s *S3Storage) GetTouches(ctx context.Context, startAfter string) ([]*s3.Object, bool, error) {
+	input := &s3.ListObjectsV2Input{
 		Prefix: aws.String("touch/"),
 		Bucket: aws.String(s.bucket),
-	})
+	}
+	if startAfter != "" {
+		input.StartAfter = aws.String(startAfter)
+	}
+
+	list, err := s.cl.Get().ListObjectsV2WithContext(ctx, input)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "Failed to get touches")
 	}

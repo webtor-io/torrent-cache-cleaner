@@ -34,24 +34,26 @@ func (s *Cleaner) cleanTorrentData(ctx context.Context, hash string) (int, error
 func (s *Cleaner) Clean() error {
 	start := time.Now()
 	log.Info("Start cleaning...")
+	last := ""
 	for {
-		t, err := s.cleanChunk()
+		t, l, err := s.cleanChunk(last)
 		if err != nil {
 			return err
 		}
 		if !t {
 			break
 		}
+		last = l
 	}
 	log.Infof("Finish cleaning elapsed time=%v", time.Since(start))
 	return nil
 }
 
-func (s *Cleaner) cleanChunk() (bool, error) {
+func (s *Cleaner) cleanChunk(marker string) (bool, string, error) {
 	ctx := context.Background()
-	touches, trunc, err := s.st.GetTouches(ctx)
+	touches, trunc, err := s.st.GetTouches(ctx, marker)
 	if err != nil {
-		return trunc, err
+		return trunc, "", err
 	}
 	ch := make(chan *s3.Object)
 	c := 5
@@ -74,13 +76,15 @@ func (s *Cleaner) cleanChunk() (bool, error) {
 			wg.Done()
 		}()
 	}
+	last := ""
 	for _, t := range touches {
 		if t.LastModified.Before(time.Now().Add(-36 * time.Hour)) {
 			ch <- t
 		}
+		last = *t.Key
 	}
 	close(ch)
 	wg.Wait()
 
-	return trunc, nil
+	return trunc, last, nil
 }
