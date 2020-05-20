@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"time"
@@ -34,19 +35,28 @@ func (s *Cleaner) cleanTorrentData(ctx context.Context, hash string) (int, error
 func (s *Cleaner) Clean() error {
 	start := time.Now()
 	log.Info("Start cleaning...")
-	last := ""
-	for {
-		t, l, err := s.cleanChunk(last)
-		if err != nil {
-			return err
+	c := make(chan error)
+	go func() {
+		last := ""
+		for {
+			t, l, err := s.cleanChunk(last)
+			if err != nil {
+				c <- err
+			}
+			if !t {
+				break
+			}
+			last = l
 		}
-		if !t {
-			break
-		}
-		last = l
+		c <- nil
+	}()
+	select {
+	case err := <-c:
+		log.Infof("Finish cleaning elapsed time=%v", time.Since(start))
+		return err
+	case <-time.After(10 * time.Minute):
+		return errors.New("Timeout occured")
 	}
-	log.Infof("Finish cleaning elapsed time=%v", time.Since(start))
-	return nil
 }
 
 func (s *Cleaner) cleanChunk(marker string) (bool, string, error) {
