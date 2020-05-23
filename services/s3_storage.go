@@ -37,6 +37,7 @@ func NewS3Storage(c *cli.Context, cl *S3Client) *S3Storage {
 }
 
 func (s *S3Storage) GetTouches(ctx context.Context, startAfter string) ([]*s3.Object, bool, error) {
+	log.Info("Loading touces")
 	input := &s3.ListObjectsV2Input{
 		Prefix: aws.String("touch/"),
 		Bucket: aws.String(s.bucket),
@@ -65,8 +66,10 @@ func (s *S3Storage) DeleteTorrentData(ctx context.Context, h string) (int, error
 			break
 		}
 	}
+	k := h + ".torrent"
+	log.Infof("Deleting torrent key=%v", k)
 	s.cl.Get().DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
-		Key:    aws.String(h + ".torrent"),
+		Key:    aws.String(k),
 		Bucket: aws.String(s.bucket),
 	})
 	return nn, nil
@@ -94,15 +97,18 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 		},
 		Bucket: aws.String(s.bucket),
 	})
+	n := len(list.Contents)
+	log.Infof("Deleting batch key=%v size=%v", k, n)
 	if err != nil {
 		log.WithError(err).Errorf("Failed to delete batch with key=%v", k)
 	}
 	isTruncated := *list.IsTruncated
-	return len(list.Contents), isTruncated, err
+	return n, isTruncated, err
 }
 
 func (s *S3Storage) DeleteTouch(ctx context.Context, h string) error {
 	k := "touch/" + h
+	log.Infof("Deleting touch key=%v")
 	_, err := s.cl.Get().DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
 		Key:    aws.String(k),
 		Bucket: aws.String(s.bucket),
