@@ -37,7 +37,7 @@ func NewS3Storage(c *cli.Context, cl *S3Client) *S3Storage {
 }
 
 func (s *S3Storage) GetTouches(ctx context.Context, startAfter string) ([]*s3.Object, bool, error) {
-	log.Info("Loading touces")
+	log.Info("Loading touches after=%v", startAfter)
 	input := &s3.ListObjectsV2Input{
 		Prefix: aws.String("touch/"),
 		Bucket: aws.String(s.bucket),
