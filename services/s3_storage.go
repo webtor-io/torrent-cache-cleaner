@@ -128,7 +128,7 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 
 func (s *S3Storage) DeleteTouch(ctx context.Context, h string) error {
 	k := "touch/" + h
-	log.Infof("Deleting touch key=%v")
+	log.Infof("Deleting touch key=%v", k)
 	_, err := s.cl.Get().DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
 		Key:    aws.String(k),
 		Bucket: aws.String(s.bucket),
