@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -83,27 +84,46 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 	if err != nil {
 		return 0, false, err
 	}
-	objects := []*s3.ObjectIdentifier{}
-	k := ""
+	ch := make(chan *s3.Object)
+	mux := &sync.Mutex{}
+	c := 20
+	n := 0
+	var wg sync.WaitGroup
+	dctx, cancel := context.WithCancel(ctx)
+	var derr error
+	for i := 0; i < c; i++ {
+		wg.Add(1)
+		go func() {
+			for o := range ch {
+				k := *o.Key
+				// log.Infof("Deleting key=%v", k)
+				_, err := s.cl.Get().DeleteObjectWithContext(dctx, &s3.DeleteObjectInput{
+					Key:    o.Key,
+					Bucket: aws.String(s.bucket),
+				})
+				if err != nil {
+					log.WithError(err).Errorf("Failed to delete key=%v", k)
+					derr = err
+					cancel()
+					break
+				}
+				mux.Lock()
+				n = n + 1
+				mux.Unlock()
+			}
+			wg.Done()
+		}()
+	}
 	for _, o := range list.Contents {
-		k = *o.Key
-		objects = append(objects, &s3.ObjectIdentifier{
-			Key: aws.String(k),
-		})
+		if dctx.Err() != nil {
+			break
+		}
+		ch <- o
 	}
-	_, err = s.cl.Get().DeleteObjectsWithContext(ctx, &s3.DeleteObjectsInput{
-		Delete: &s3.Delete{
-			Objects: objects,
-		},
-		Bucket: aws.String(s.bucket),
-	})
-	n := len(list.Contents)
-	log.Infof("Deleting batch key=%v size=%v", k, n)
-	if err != nil {
-		log.WithError(err).Errorf("Failed to delete batch with key=%v", k)
-	}
+	close(ch)
+	wg.Wait()
 	isTruncated := *list.IsTruncated
-	return n, isTruncated, err
+	return n, isTruncated, derr
 }
 
 func (s *S3Storage) DeleteTouch(ctx context.Context, h string) error {
