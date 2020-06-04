@@ -88,7 +88,7 @@ func (s *Cleaner) cleanChunk(marker string) (bool, string, error) {
 	}
 	last := ""
 	for _, t := range touches {
-		if t.LastModified.Before(time.Now().Add(-36 * time.Hour)) {
+		if t.LastModified.Before(time.Now().Add(-12 * time.Hour)) {
 			ch <- t
 		}
 		last = *t.Key
