@@ -67,8 +67,14 @@ func (s *S3Storage) DeleteTorrentData(ctx context.Context, h string) (int, error
 			break
 		}
 	}
-	k := h + ".torrent"
+	k := "torrents/" + h
 	log.Infof("Deleting torrent key=%v", k)
+	s.cl.Get().DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
+		Key:    aws.String(k),
+		Bucket: aws.String(s.bucket),
+	})
+	k = "completed_pieces/" + h
+	log.Infof("Deleting completed pieces key=%v", k)
 	s.cl.Get().DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
 		Key:    aws.String(k),
 		Bucket: aws.String(s.bucket),
@@ -77,9 +83,10 @@ func (s *S3Storage) DeleteTorrentData(ctx context.Context, h string) (int, error
 }
 
 func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, bool, error) {
+	bucket := s.bucket + "-" + h[0:2]
 	list, err := s.cl.Get().ListObjectsWithContext(ctx, &s3.ListObjectsInput{
 		Prefix: aws.String(h),
-		Bucket: aws.String(s.bucket),
+		Bucket: aws.String(bucket),
 	})
 	if err != nil {
 		return 0, false, err
@@ -99,7 +106,7 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 				// log.Infof("Deleting key=%v", k)
 				_, err := s.cl.Get().DeleteObjectWithContext(dctx, &s3.DeleteObjectInput{
 					Key:    o.Key,
-					Bucket: aws.String(s.bucket),
+					Bucket: aws.String(bucket),
 				})
 				if err != nil {
 					log.WithError(err).Errorf("Failed to delete key=%v", k)
