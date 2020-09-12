@@ -13,12 +13,14 @@ import (
 )
 
 type S3Storage struct {
-	bucket string
-	cl     *S3Client
+	bucket       string
+	bucketSpread bool
+	cl           *S3Client
 }
 
 const (
-	AWS_BUCKET = "aws-bucket"
+	AWS_BUCKET        = "aws-bucket"
+	AWS_BUCKET_SPREAD = "aws-bucket-spread"
 )
 
 func RegisterS3StorageFlags(c *cli.App) {
@@ -28,12 +30,17 @@ func RegisterS3StorageFlags(c *cli.App) {
 		Value:  "",
 		EnvVar: "AWS_BUCKET",
 	})
+	c.Flags = append(c.Flags, cli.BoolFlag{
+		Name:   AWS_BUCKET_SPREAD,
+		EnvVar: "AWS_BUCKET_SPREAD",
+	})
 }
 
 func NewS3Storage(c *cli.Context, cl *S3Client) *S3Storage {
 	return &S3Storage{
-		bucket: c.String(AWS_BUCKET),
-		cl:     cl,
+		bucket:       c.String(AWS_BUCKET),
+		bucketSpread: c.Bool(AWS_BUCKET_SPREAD),
+		cl:           cl,
 	}
 }
 
@@ -83,7 +90,10 @@ func (s *S3Storage) DeleteTorrentData(ctx context.Context, h string) (int, error
 }
 
 func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, bool, error) {
-	bucket := s.bucket + "-" + h[0:2]
+	bucket := s.bucket
+	if s.bucketSpread {
+		bucket += "-" + h[0:2]
+	}
 	list, err := s.cl.Get().ListObjectsWithContext(ctx, &s3.ListObjectsInput{
 		Prefix: aws.String(h),
 		Bucket: aws.String(bucket),
