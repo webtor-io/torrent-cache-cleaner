@@ -86,6 +86,12 @@ func (s *S3Storage) DeleteTorrentData(ctx context.Context, h string) (int, error
 		Key:    aws.String(k),
 		Bucket: aws.String(s.bucket),
 	})
+	k = "done/" + h
+	log.Infof("Deleting done marker key=%v", k)
+	s.cl.Get().DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
+		Key:    aws.String(k),
+		Bucket: aws.String(s.bucket),
+	})
 	return nn, nil
 }
 
