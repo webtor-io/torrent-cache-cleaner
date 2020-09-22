@@ -2,9 +2,11 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pkg/errors"
 
@@ -32,6 +34,7 @@ func RegisterS3StorageFlags(c *cli.App) {
 	})
 	c.Flags = append(c.Flags, cli.BoolFlag{
 		Name:   AWS_BUCKET_SPREAD,
+		Usage:  "AWS Bucket Spread",
 		EnvVar: "AWS_BUCKET_SPREAD",
 	})
 }
@@ -44,8 +47,25 @@ func NewS3Storage(c *cli.Context, cl *S3Client) *S3Storage {
 	}
 }
 
+func (s *S3Storage) IsDone(ctx context.Context, hash string) (bool, error) {
+	key := fmt.Sprintf("done/%v", hash)
+	log.Infof("Check done bucket=%v key=%v", s.bucket, key)
+	input := &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	}
+	_, err := s.cl.Get().GetObjectWithContext(ctx, input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == aerr.Code() {
+			return false, nil
+		}
+		return false, errors.Wrapf(err, "Failed to get done status")
+	}
+	return true, nil
+}
+
 func (s *S3Storage) GetTouches(ctx context.Context, startAfter string) ([]*s3.Object, bool, error) {
-	log.Infof("Loading touches after=%v", startAfter)
+	log.Infof("Loading touches bucket=%v after=%v", s.bucket, startAfter)
 	input := &s3.ListObjectsV2Input{
 		Prefix: aws.String("touch/"),
 		Bucket: aws.String(s.bucket),
@@ -75,19 +95,19 @@ func (s *S3Storage) DeleteTorrentData(ctx context.Context, h string) (int, error
 		}
 	}
 	k := "torrents/" + h
-	log.Infof("Deleting torrent key=%v", k)
+	log.Infof("Deleting torrent bucket=%v key=%v", s.bucket, k)
 	s.cl.Get().DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
 		Key:    aws.String(k),
 		Bucket: aws.String(s.bucket),
 	})
 	k = "completed_pieces/" + h
-	log.Infof("Deleting completed pieces key=%v", k)
+	log.Infof("Deleting completed pieces bucket=%v key=%v", s.bucket, k)
 	s.cl.Get().DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
 		Key:    aws.String(k),
 		Bucket: aws.String(s.bucket),
 	})
 	k = "done/" + h
-	log.Infof("Deleting done marker key=%v", k)
+	log.Infof("Deleting done marker bucket=%v key=%v", s.bucket, k)
 	s.cl.Get().DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
 		Key:    aws.String(k),
 		Bucket: aws.String(s.bucket),
@@ -125,7 +145,7 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 					Bucket: aws.String(bucket),
 				})
 				if err != nil {
-					log.WithError(err).Errorf("Failed to delete key=%v", k)
+					log.WithError(err).Errorf("Failed to delete bucket=%v key=%v", bucket, k)
 					derr = err
 					cancel()
 					break
@@ -151,7 +171,7 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 
 func (s *S3Storage) DeleteTouch(ctx context.Context, h string) error {
 	k := "touch/" + h
-	log.Infof("Deleting touch key=%v", k)
+	log.Infof("Deleting touch bucket=%v key=%v", s.bucket, k)
 	_, err := s.cl.Get().DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
 		Key:    aws.String(k),
 		Bucket: aws.String(s.bucket),
