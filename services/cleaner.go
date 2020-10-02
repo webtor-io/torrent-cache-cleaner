@@ -94,8 +94,8 @@ func (s *Cleaner) cleanChunk(marker string) (bool, string, error) {
 		if err != nil {
 			log.WithError(err).Infof("Failed get done status for hash=%v", hash)
 		}
-		if (done && t.LastModified.Before(time.Now().Add(-3*24*time.Hour))) ||
-			(!done && t.LastModified.Before(time.Now().Add(-24*time.Hour))) {
+		if (done && t.LastModified.Before(time.Now().Add(-36*time.Hour))) ||
+			(!done && t.LastModified.Before(time.Now().Add(-6*time.Hour))) {
 			log.Infof("Adding torrent to clean queue hash=%v done=%v ", hash, done)
 			ch <- t
 		}
