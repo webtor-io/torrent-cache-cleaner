@@ -9,6 +9,7 @@ func configure(app *cli.App) {
 	app.Flags = []cli.Flag{}
 	s.RegisterS3ClientFlags(app)
 	s.RegisterS3StorageFlags(app)
+	s.RegisterCleanerFlags(app)
 
 	app.Action = run
 }
@@ -22,7 +23,7 @@ func run(c *cli.Context) error {
 	s3st := s.NewS3Storage(c, s3cl)
 
 	// Setting Cleaner
-	cl := s.NewCleaner(s3st)
+	cl := s.NewCleaner(c, s3st)
 
 	// Clean!
 	return cl.Clean()

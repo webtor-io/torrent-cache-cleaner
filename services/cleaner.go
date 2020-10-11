@@ -8,16 +8,43 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/urfave/cli"
 
 	log "github.com/sirupsen/logrus"
 )
 
-type Cleaner struct {
-	st *S3Storage
+const (
+	DONE_TORRENTS_EXPIRE_HOURS    = "done-torrents-expire-hours"
+	PARTIAL_TORRENTS_EXPIRE_HOURS = "partial-torrents-expire-hours"
+)
+
+func RegisterCleanerFlags(c *cli.App) {
+	c.Flags = append(c.Flags, cli.IntFlag{
+		Name:   DONE_TORRENTS_EXPIRE_HOURS,
+		Usage:  "Expiration period for completly downloaded torrents (in hours)",
+		Value:  36,
+		EnvVar: "DONE_TORRENTS_EXPIRE_HOURS",
+	})
+	c.Flags = append(c.Flags, cli.IntFlag{
+		Name:   PARTIAL_TORRENTS_EXPIRE_HOURS,
+		Usage:  "Expiration period for partialy downloaded torrents (in hours)",
+		Value:  12,
+		EnvVar: "PARTIAL_TORRENTS_EXPIRE_HOURS",
+	})
 }
 
-func NewCleaner(st *S3Storage) *Cleaner {
-	return &Cleaner{st: st}
+type Cleaner struct {
+	st            *S3Storage
+	doneExpire    int
+	partialExpire int
+}
+
+func NewCleaner(c *cli.Context, st *S3Storage) *Cleaner {
+	return &Cleaner{
+		st:            st,
+		doneExpire:    c.Int(DONE_TORRENTS_EXPIRE_HOURS),
+		partialExpire: c.Int(PARTIAL_TORRENTS_EXPIRE_HOURS),
+	}
 }
 
 func (s *Cleaner) cleanTorrentData(ctx context.Context, hash string) (int, error) {
@@ -94,8 +121,8 @@ func (s *Cleaner) cleanChunk(marker string) (bool, string, error) {
 		if err != nil {
 			log.WithError(err).Infof("Failed get done status for hash=%v", hash)
 		}
-		if (done && t.LastModified.Before(time.Now().Add(-36*time.Hour))) ||
-			(!done && t.LastModified.Before(time.Now().Add(-6*time.Hour))) {
+		if (done && t.LastModified.Before(time.Now().Add(-time.Duration(s.doneExpire)*time.Hour))) ||
+			(!done && t.LastModified.Before(time.Now().Add(-time.Duration(s.partialExpire)*time.Hour))) {
 			log.Infof("Adding torrent to clean queue hash=%v done=%v ", hash, done)
 			ch <- t
 		}
