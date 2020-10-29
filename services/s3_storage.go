@@ -153,7 +153,7 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 					break
 				}
 				mux.Lock()
-				n = n + 1
+				n++
 				if n > deletePieceCount {
 					log.Infof("Finish cleaning pieces=%v thread=%v infohash=%v", deletePieceCount, i, h)
 					deletePieceCount += 100
