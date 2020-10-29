@@ -131,7 +131,7 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 	mux := &sync.Mutex{}
 	c := 20
 	n := 0
-	deletePieceCount := 1000
+	deletePieceCount := 100
 	var wg sync.WaitGroup
 	dctx, cancel := context.WithCancel(ctx)
 	var derr error
@@ -156,11 +156,11 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 				n = n + 1
 				if n > deletePieceCount {
 					log.Infof("Finish cleaning pieces=%v thread=%v infohash=%v", deletePieceCount, i, h)
-					deletePieceCount += 1000
+					deletePieceCount += 100
 				}
 				mux.Unlock()
 			}
-			log.Infof("Finish torrent cleaning thread=%v", i)
+			log.Infof("Finish torrent cleaning thread=%v infohash=%v", i, h)
 			wg.Done()
 		}(i)
 	}

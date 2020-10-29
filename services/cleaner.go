@@ -97,7 +97,7 @@ func (s *Cleaner) cleanChunk(marker string) (bool, string, error) {
 	var wg sync.WaitGroup
 	for i := 0; i < c; i++ {
 		wg.Add(1)
-		log.Infof("Start cleaning thread=%v", i)
+		log.Infof("Start cleaning thread=%v marker=%v", i, marker)
 		go func(i int) {
 			for t := range ch {
 				k := *t.Key
@@ -111,7 +111,7 @@ func (s *Cleaner) cleanChunk(marker string) (bool, string, error) {
 					log.Infof("Done cleaning hash=%v pieces=%v elapsed time=%v thread=%v", k, n, time.Since(start), i)
 				}
 			}
-			log.Infof("Finish cleaning thread=%v", i)
+			log.Infof("Finish cleaning thread=%v marker=%v", i, marker)
 			wg.Done()
 		}(i)
 	}
