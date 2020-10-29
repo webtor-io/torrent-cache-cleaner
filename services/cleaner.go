@@ -81,7 +81,7 @@ func (s *Cleaner) Clean() error {
 	case err := <-c:
 		log.Infof("Finish cleaning elapsed time=%v", time.Since(start))
 		return err
-	case <-time.After(10 * time.Minute):
+	case <-time.After(5 * time.Hour):
 		return errors.New("Timeout occured")
 	}
 }
@@ -93,7 +93,7 @@ func (s *Cleaner) cleanChunk(marker string) (bool, string, error) {
 		return trunc, "", err
 	}
 	ch := make(chan *s3.Object)
-	c := 5
+	c := 10
 	var wg sync.WaitGroup
 	for i := 0; i < c; i++ {
 		wg.Add(1)
