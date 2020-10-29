@@ -81,7 +81,7 @@ func (s *Cleaner) Clean() error {
 	case err := <-c:
 		log.Infof("Finish cleaning elapsed time=%v", time.Since(start))
 		return err
-	case <-time.After(5 * time.Hour):
+	case <-time.After(1 * time.Hour):
 		return errors.New("Timeout occured")
 	}
 }
@@ -97,21 +97,23 @@ func (s *Cleaner) cleanChunk(marker string) (bool, string, error) {
 	var wg sync.WaitGroup
 	for i := 0; i < c; i++ {
 		wg.Add(1)
-		go func() {
+		log.Infof("Start cleaning thread=%v", i)
+		go func(i int) {
 			for t := range ch {
 				k := *t.Key
 				k = strings.TrimPrefix(k, "touch/")
-				log.Infof("Start cleaning hash=%v modification date=%v", k, t.LastModified)
+				log.Infof("Start cleaning hash=%v modification date=%v thread=%v", k, t.LastModified, i)
 				start := time.Now()
 				n, err := s.cleanTorrentData(ctx, k)
 				if err != nil {
-					log.WithError(err).Infof("Failed to clean hash=%v", k)
+					log.WithError(err).Infof("Failed to clean hash=%v thread=%v", k, i)
 				} else {
-					log.Infof("Done cleaning hash=%v pieces=%v elapsed time=%v", k, n, time.Since(start))
+					log.Infof("Done cleaning hash=%v pieces=%v elapsed time=%v thread=%v", k, n, time.Since(start), i)
 				}
 			}
+			log.Infof("Finish cleaning thread=%v", i)
 			wg.Done()
-		}()
+		}(i)
 	}
 	last := ""
 	for _, t := range touches {
