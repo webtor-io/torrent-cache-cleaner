@@ -127,9 +127,13 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 	if err != nil {
 		return 0, false, err
 	}
+	isTruncated := *list.IsTruncated
+	if len(list.Contents) == 0 && !isTruncated {
+		return 0, false, nil
+	}
 	ch := make(chan *s3.Object)
 	mux := &sync.Mutex{}
-	c := 20
+	c := len(list.Contents)/100 + 1
 	n := 0
 	deletePieceCount := 100
 	var wg sync.WaitGroup
@@ -137,7 +141,7 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 	var derr error
 	for i := 0; i < c; i++ {
 		wg.Add(1)
-		log.Infof("Start torrent cleaning thread=%v infohash=%v", i, h)
+		log.Infof("Start torrent cleaning thread=%v/%v infohash=%v", i, c, h)
 		go func(i int) {
 			for o := range ch {
 				k := *o.Key
@@ -147,7 +151,7 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 					Bucket: aws.String(bucket),
 				})
 				if err != nil {
-					log.WithError(err).Errorf("Failed to delete bucket=%v key=%v infohash=%v thread=%v", bucket, k, h, i)
+					log.WithError(err).Errorf("Failed to delete bucket=%v key=%v infohash=%v thread=%v/%v", bucket, k, h, i, c)
 					derr = err
 					cancel()
 					break
@@ -155,12 +159,12 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 				mux.Lock()
 				n++
 				if n > deletePieceCount {
-					log.Infof("Finish cleaning pieces=%v thread=%v infohash=%v", deletePieceCount, i, h)
+					log.Infof("Finish cleaning pieces=%v thread=%v/%v infohash=%v", deletePieceCount, i, c, h)
 					deletePieceCount += 100
 				}
 				mux.Unlock()
 			}
-			log.Infof("Finish torrent cleaning thread=%v infohash=%v", i, h)
+			log.Infof("Finish torrent cleaning thread=%v/%v infohash=%v", i, c, h)
 			wg.Done()
 		}(i)
 	}
@@ -173,7 +177,6 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 	close(ch)
 	wg.Wait()
 	cancel()
-	isTruncated := *list.IsTruncated
 	return n, isTruncated, derr
 }
 

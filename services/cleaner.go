@@ -62,42 +62,14 @@ func (s *Cleaner) cleanTorrentData(ctx context.Context, hash string) (int, error
 func (s *Cleaner) Clean() error {
 	start := time.Now()
 	log.Info("Start cleaning...")
-	c := make(chan error)
-	go func() {
-		last := ""
-		for {
-			t, l, err := s.cleanChunk(last)
-			if err != nil {
-				c <- err
-			}
-			if !t {
-				break
-			}
-			last = l
-		}
-		c <- nil
-	}()
-	select {
-	case err := <-c:
-		log.Infof("Finish cleaning elapsed time=%v", time.Since(start))
-		return err
-	case <-time.After(1 * time.Hour):
-		return errors.New("Timeout occured")
-	}
-}
-
-func (s *Cleaner) cleanChunk(marker string) (bool, string, error) {
 	ctx := context.Background()
-	touches, trunc, err := s.st.GetTouches(ctx, marker)
-	if err != nil {
-		return trunc, "", err
-	}
-	ch := make(chan *s3.Object)
-	c := 10
+	c := make(chan error)
+	ch := make(chan *s3.Object, 100)
+	tc := 10
 	var wg sync.WaitGroup
-	for i := 0; i < c; i++ {
+	for i := 0; i < tc; i++ {
 		wg.Add(1)
-		log.Infof("Start cleaning thread=%v marker=%v", i, marker)
+		log.Infof("Start cleaning thread=%v", i)
 		go func(i int) {
 			for t := range ch {
 				k := *t.Key
@@ -111,9 +83,39 @@ func (s *Cleaner) cleanChunk(marker string) (bool, string, error) {
 					log.Infof("Done cleaning hash=%v pieces=%v elapsed time=%v thread=%v", k, n, time.Since(start), i)
 				}
 			}
-			log.Infof("Finish cleaning thread=%v marker=%v", i, marker)
+			log.Infof("Finish cleaning thread=%v", i)
 			wg.Done()
 		}(i)
+	}
+	go func() {
+		last := ""
+		for {
+			t, l, err := s.cleanChunk(ctx, ch, last)
+			if err != nil {
+				c <- err
+			}
+			if !t {
+				break
+			}
+			last = l
+		}
+		close(ch)
+		wg.Wait()
+		c <- nil
+	}()
+	select {
+	case err := <-c:
+		log.Infof("Finish cleaning elapsed time=%v", time.Since(start))
+		return err
+	case <-time.After(1 * time.Hour):
+		return errors.New("Timeout occured")
+	}
+}
+
+func (s *Cleaner) cleanChunk(ctx context.Context, ch chan *s3.Object, marker string) (bool, string, error) {
+	touches, trunc, err := s.st.GetTouches(ctx, marker)
+	if err != nil {
+		return trunc, "", err
 	}
 	last := ""
 	for _, t := range touches {
@@ -130,8 +132,6 @@ func (s *Cleaner) cleanChunk(marker string) (bool, string, error) {
 		}
 		last = *t.Key
 	}
-	close(ch)
-	wg.Wait()
 
 	return trunc, last, nil
 }
