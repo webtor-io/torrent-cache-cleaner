@@ -64,7 +64,7 @@ func (s *Cleaner) Clean() error {
 	log.Info("Start cleaning...")
 	ctx := context.Background()
 	c := make(chan error)
-	ch := make(chan *s3.Object, 100)
+	ch := make(chan *s3.Object, 10000)
 	tc := 10
 	var wg sync.WaitGroup
 	for i := 0; i < tc; i++ {
