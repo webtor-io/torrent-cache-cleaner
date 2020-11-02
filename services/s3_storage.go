@@ -139,10 +139,10 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 	c := len(list.Contents)/100 + 1
 	n := 0
 	var wg sync.WaitGroup
+	wg.Add(c)
 	dctx, cancel := context.WithCancel(ctx)
 	var derr error
 	for i := 0; i < c; i++ {
-		wg.Add(1)
 		log.Infof("Start torrent cleaning thread=%v/%v infohash=%v", i, c, h)
 		go func(i int) {
 			defer wg.Done()

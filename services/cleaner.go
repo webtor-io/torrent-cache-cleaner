@@ -67,8 +67,8 @@ func (s *Cleaner) Clean() error {
 	ch := make(chan *s3.Object, 10000)
 	tc := 10
 	var wg sync.WaitGroup
+	wg.Add(tc)
 	for i := 0; i < tc; i++ {
-		wg.Add(1)
 		log.Infof("Start cleaning thread=%v", i)
 		go func(i int) {
 			defer wg.Done()
