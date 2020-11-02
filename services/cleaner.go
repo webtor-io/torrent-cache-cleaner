@@ -71,6 +71,7 @@ func (s *Cleaner) Clean() error {
 		wg.Add(1)
 		log.Infof("Start cleaning thread=%v", i)
 		go func(i int) {
+			defer wg.Done()
 			for t := range ch {
 				k := *t.Key
 				k = strings.TrimPrefix(k, "touch/")
@@ -84,7 +85,6 @@ func (s *Cleaner) Clean() error {
 				}
 			}
 			log.Infof("Finish cleaning thread=%v", i)
-			wg.Done()
 		}(i)
 	}
 	go func() {

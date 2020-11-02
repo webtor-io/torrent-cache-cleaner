@@ -145,6 +145,7 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 		wg.Add(1)
 		log.Infof("Start torrent cleaning thread=%v/%v infohash=%v", i, c, h)
 		go func(i int) {
+			defer wg.Done()
 			for o := range ch {
 				k := *o.Key
 				// log.Infof("Deleting key=%v", k)
@@ -163,7 +164,6 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 				mux.Unlock()
 			}
 			log.Infof("Finish torrent cleaning thread=%v/%v infohash=%v", i, c, h)
-			wg.Done()
 		}(i)
 	}
 	for _, o := range list.Contents {
