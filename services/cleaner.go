@@ -125,6 +125,7 @@ func (s *Cleaner) cleanChunk(ctx context.Context, ch chan *s3.Object, marker str
 		if err != nil {
 			log.WithError(err).Infof("Failed get done status for hash=%v", hash)
 		}
+		log.Infof("Checking hash=%v lastModified=%v done=%v", hash, t.LastModified, done)
 		if (done && t.LastModified.Before(time.Now().Add(-time.Duration(s.doneExpire)*time.Hour))) ||
 			(!done && t.LastModified.Before(time.Now().Add(-time.Duration(s.partialExpire)*time.Hour))) {
 			log.Infof("Adding torrent to clean queue hash=%v done=%v ", hash, done)

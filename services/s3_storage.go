@@ -49,7 +49,6 @@ func NewS3Storage(c *cli.Context, cl *S3Client) *S3Storage {
 
 func (s *S3Storage) IsDone(ctx context.Context, hash string) (bool, error) {
 	key := fmt.Sprintf("done/%v", hash)
-	log.Infof("Check done bucket=%v key=%v", s.bucket, key)
 	input := &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
