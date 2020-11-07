@@ -85,6 +85,7 @@ func (s *S3Client) get() *s3.S3 {
 		Region:      aws.String(s.region),
 		// DisableSSL:       aws.Bool(true),
 		S3ForcePathStyle: aws.Bool(true),
+		MaxRetries:       aws.Int(10),
 	}
 	ss := session.New(c)
 	s.s3 = s3.New(ss)
