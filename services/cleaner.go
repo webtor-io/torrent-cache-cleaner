@@ -88,20 +88,19 @@ func (s *Cleaner) Clean() error {
 		}(i)
 	}
 	go func() {
-		go func() {
-			last := ""
-			for {
-				t, l, err := s.cleanChunk(ctx, ch, last)
-				if err != nil {
-					c <- err
-				}
-				if !t {
-					break
-				}
-				last = l
+		last := ""
+		for {
+			t, l, err := s.cleanChunk(ctx, ch, last)
+			if err != nil {
+				c <- err
+				break
 			}
-			close(ch)
-		}()
+			if !t {
+				break
+			}
+			last = l
+		}
+		close(ch)
 		wg.Wait()
 		c <- nil
 	}()
