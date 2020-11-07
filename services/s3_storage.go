@@ -89,9 +89,7 @@ func (s *S3Storage) DeleteTorrentData(ctx context.Context, h string) (int, error
 			return n, err
 		}
 		nn = nn + n
-		if nn%100 == 0 {
-			log.Infof("Finish cleaning pieces=%v infohash=%v", nn, h)
-		}
+		log.Infof("Finish cleaning pieces=%v infohash=%v", nn, h)
 		if !t {
 			break
 		}

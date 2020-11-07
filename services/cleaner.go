@@ -88,18 +88,20 @@ func (s *Cleaner) Clean() error {
 		}(i)
 	}
 	go func() {
-		last := ""
-		for {
-			t, l, err := s.cleanChunk(ctx, ch, last)
-			if err != nil {
-				c <- err
+		go func() {
+			last := ""
+			for {
+				t, l, err := s.cleanChunk(ctx, ch, last)
+				if err != nil {
+					c <- err
+				}
+				if !t {
+					break
+				}
+				last = l
 			}
-			if !t {
-				break
-			}
-			last = l
-		}
-		close(ch)
+			close(ch)
+		}()
 		wg.Wait()
 		c <- nil
 	}()
@@ -125,10 +127,10 @@ func (s *Cleaner) cleanChunk(ctx context.Context, ch chan *s3.Object, marker str
 		if err != nil {
 			log.WithError(err).Infof("Failed get done status for hash=%v", hash)
 		}
-		log.Infof("Checking hash=%v lastModified=%v done=%v", hash, t.LastModified, done)
+		log.Infof("Checking hash=%v touch=%v done=%v", hash, t.LastModified, done)
 		if (done && t.LastModified.Before(time.Now().Add(-time.Duration(s.doneExpire)*time.Hour))) ||
 			(!done && t.LastModified.Before(time.Now().Add(-time.Duration(s.partialExpire)*time.Hour))) {
-			log.Infof("Adding torrent to clean queue hash=%v done=%v ", hash, done)
+			log.Infof("Adding torrent to clean queue hash=%v touch=%v done=%v ", hash, t.LastModified, done)
 			ch <- t
 		}
 		last = *t.Key
