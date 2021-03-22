@@ -66,15 +66,15 @@ func (s *S3Storage) IsDone(ctx context.Context, hash string) (bool, error) {
 
 func (s *S3Storage) GetTouches(ctx context.Context, startAfter string) ([]*s3.Object, bool, error) {
 	log.Infof("Loading touches bucket=%v after=%v", s.bucket, startAfter)
-	input := &s3.ListObjectsV2Input{
+	input := &s3.ListObjectsInput{
 		Prefix: aws.String("touch/"),
 		Bucket: aws.String(s.bucket),
 	}
 	if startAfter != "" {
-		input.StartAfter = aws.String(startAfter)
+		input.Marker = aws.String(startAfter)
 	}
 
-	list, err := s.cl.Get().ListObjectsV2WithContext(ctx, input)
+	list, err := s.cl.Get().ListObjectsWithContext(ctx, input)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "Failed to get touches")
 	}
