@@ -1,3 +1,6 @@
+# code.cloudfoundry.org/bytefmt v0.0.0-20211005130812-5bb3c17173e5
+## explicit
+code.cloudfoundry.org/bytefmt
 # github.com/aws/aws-sdk-go v1.36.28
 ## explicit
 github.com/aws/aws-sdk-go/aws
@@ -54,18 +57,10 @@ github.com/go-redis/redis/internal/hashtag
 github.com/go-redis/redis/internal/pool
 github.com/go-redis/redis/internal/proto
 github.com/go-redis/redis/internal/util
-# github.com/golang/protobuf v1.4.2
-github.com/golang/protobuf/proto
-github.com/golang/protobuf/protoc-gen-go/descriptor
-github.com/golang/protobuf/ptypes
-github.com/golang/protobuf/ptypes/any
-github.com/golang/protobuf/ptypes/duration
-github.com/golang/protobuf/ptypes/timestamp
 # github.com/jmespath/go-jmespath v0.4.0
 github.com/jmespath/go-jmespath
 # github.com/joonix/log v0.0.0-20200409080653-9c1d2ceb5f1d
 ## explicit
-github.com/joonix/log
 # github.com/konsorten/go-windows-terminal-sequences v1.0.3
 ## explicit
 # github.com/pkg/errors v0.9.1
@@ -84,42 +79,7 @@ github.com/urfave/cli
 github.com/webtor-io/common-services
 # github.com/webtor-io/torrent-web-cache v0.0.0-20200507221945-57e4f25393d0
 ## explicit
-# golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78
+# golang.org/x/sys v0.0.0-20210423082822-04245dca01da
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# google.golang.org/genproto v0.0.0-20190817000702-55e96fffbd48
-google.golang.org/genproto/googleapis/api/annotations
-google.golang.org/genproto/googleapis/logging/type
-# google.golang.org/protobuf v1.23.0
-google.golang.org/protobuf/encoding/prototext
-google.golang.org/protobuf/encoding/protowire
-google.golang.org/protobuf/internal/descfmt
-google.golang.org/protobuf/internal/descopts
-google.golang.org/protobuf/internal/detrand
-google.golang.org/protobuf/internal/encoding/defval
-google.golang.org/protobuf/internal/encoding/messageset
-google.golang.org/protobuf/internal/encoding/tag
-google.golang.org/protobuf/internal/encoding/text
-google.golang.org/protobuf/internal/errors
-google.golang.org/protobuf/internal/fieldnum
-google.golang.org/protobuf/internal/fieldsort
-google.golang.org/protobuf/internal/filedesc
-google.golang.org/protobuf/internal/filetype
-google.golang.org/protobuf/internal/flags
-google.golang.org/protobuf/internal/genname
-google.golang.org/protobuf/internal/impl
-google.golang.org/protobuf/internal/mapsort
-google.golang.org/protobuf/internal/pragma
-google.golang.org/protobuf/internal/set
-google.golang.org/protobuf/internal/strs
-google.golang.org/protobuf/internal/version
-google.golang.org/protobuf/proto
-google.golang.org/protobuf/reflect/protoreflect
-google.golang.org/protobuf/reflect/protoregistry
-google.golang.org/protobuf/runtime/protoiface
-google.golang.org/protobuf/runtime/protoimpl
-google.golang.org/protobuf/types/descriptorpb
-google.golang.org/protobuf/types/known/anypb
-google.golang.org/protobuf/types/known/durationpb
-google.golang.org/protobuf/types/known/timestamppb

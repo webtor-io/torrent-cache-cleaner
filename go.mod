@@ -3,8 +3,9 @@ module github.com/webtor-io/torrent-cache-cleaner
 go 1.15
 
 require (
+	code.cloudfoundry.org/bytefmt v0.0.0-20211005130812-5bb3c17173e5
 	github.com/aws/aws-sdk-go v1.36.28
-	github.com/joonix/log v0.0.0-20200409080653-9c1d2ceb5f1d
+	github.com/joonix/log v0.0.0-20200409080653-9c1d2ceb5f1d // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.7.0

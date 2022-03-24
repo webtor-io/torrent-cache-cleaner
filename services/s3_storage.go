@@ -48,26 +48,83 @@ func NewS3Storage(c *cli.Context, cl *cs.S3Client) *S3Storage {
 	}
 }
 
+func (s *S3Storage) GetTouch(ctx context.Context, hash string) (*s3.GetObjectOutput, error) {
+	key := fmt.Sprintf("touch/%v", hash)
+	input := &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	}
+	o, err := s.cl.Get().GetObjectWithContext(ctx, input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == aerr.Code() {
+			return nil, nil
+		}
+		return nil, errors.Wrapf(err, "failed to get check touch")
+	}
+	defer o.Body.Close()
+	return o, nil
+}
+
 func (s *S3Storage) IsDone(ctx context.Context, hash string) (bool, error) {
 	key := fmt.Sprintf("done/%v", hash)
 	input := &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
 	}
-	_, err := s.cl.Get().GetObjectWithContext(ctx, input)
+	o, err := s.cl.Get().GetObjectWithContext(ctx, input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == aerr.Code() {
 			return false, nil
 		}
 		return false, errors.Wrapf(err, "Failed to get done status")
 	}
+	defer o.Body.Close()
 	return true, nil
 }
 
-func (s *S3Storage) GetTouches(ctx context.Context, startAfter string) ([]*s3.Object, bool, error) {
-	log.Infof("Loading touches bucket=%v after=%v", s.bucket, startAfter)
+func (s *S3Storage) IsTranscoded(ctx context.Context, hash string) (bool, error) {
+	key := fmt.Sprintf("%v/index.m3u8", hash)
+	input := &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	}
+	o, err := s.cl.Get().GetObjectWithContext(ctx, input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == aerr.Code() {
+			return false, nil
+		}
+		return false, errors.Wrapf(err, "Failed to get done status")
+	}
+	defer o.Body.Close()
+	return true, nil
+}
+
+func (s *S3Storage) GetAllObjects(ctx context.Context, prefix string, startAfter string) ([]*s3.Object, bool, error) {
+	// log.Infof("loading objects bucket=%v after=%v", s.bucket, startAfter)
 	input := &s3.ListObjectsInput{
-		Prefix: aws.String("touch/"),
+		Bucket: aws.String(s.bucket),
+		Prefix: aws.String(prefix),
+	}
+	if startAfter != "" {
+		input.Marker = aws.String(startAfter)
+	}
+
+	list, err := s.cl.Get().ListObjectsWithContext(ctx, input)
+	if err != nil {
+		return nil, false, errors.Wrap(err, "failed to get objects")
+	}
+	t := *list.IsTruncated
+	return list.Contents, t, nil
+}
+
+func (s *S3Storage) GetTouches(ctx context.Context, startAfter string, hash string) ([]*s3.Object, bool, error) {
+	log.Infof("loading touches bucket=%v after=%v", s.bucket, startAfter)
+	prefix := "touch/"
+	if hash != "" {
+		prefix += hash
+	}
+	input := &s3.ListObjectsInput{
+		Prefix: aws.String(prefix),
 		Bucket: aws.String(s.bucket),
 	}
 	if startAfter != "" {
@@ -76,7 +133,7 @@ func (s *S3Storage) GetTouches(ctx context.Context, startAfter string) ([]*s3.Ob
 
 	list, err := s.cl.Get().ListObjectsWithContext(ctx, input)
 	if err != nil {
-		return nil, false, errors.Wrap(err, "Failed to get touches")
+		return nil, false, errors.Wrap(err, "failed to get touches")
 	}
 	t := *list.IsTruncated
 	return list.Contents, t, nil
@@ -90,31 +147,37 @@ func (s *S3Storage) DeleteTorrentData(ctx context.Context, h string) (int, error
 			return n, err
 		}
 		nn = nn + n
-		log.Infof("Finish cleaning pieces=%v infohash=%v", nn, h)
+		// log.Infof("finish cleaning pieces=%v infohash=%v", nn, h)
 		if !t {
 			break
 		}
 	}
 	k := "torrents/" + h
-	log.Infof("Deleting torrent bucket=%v key=%v infohash=%v", s.bucket, k, h)
+	// log.Infof("deleting torrent bucket=%v key=%v infohash=%v", s.bucket, k, h)
 	s.cl.Get().DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
 		Key:    aws.String(k),
 		Bucket: aws.String(s.bucket),
 	})
 	k = "completed_pieces/" + h
-	log.Infof("Deleting completed pieces bucket=%v key=%v infohash=%v", s.bucket, k, h)
+	// log.Infof("deleting completed pieces bucket=%v key=%v infohash=%v", s.bucket, k, h)
 	s.cl.Get().DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
 		Key:    aws.String(k),
 		Bucket: aws.String(s.bucket),
 	})
 	k = "downloaded_size/" + h
-	log.Infof("Deleting downloaded size bucket=%v key=%v infohash=%v", s.bucket, k, h)
+	// log.Infof("deleting downloaded size bucket=%v key=%v infohash=%v", s.bucket, k, h)
 	s.cl.Get().DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
 		Key:    aws.String(k),
 		Bucket: aws.String(s.bucket),
 	})
 	k = "done/" + h
-	log.Infof("Deleting done marker bucket=%v key=%v infohash=%v", s.bucket, k, h)
+	// log.Infof("deleting done marker bucket=%v key=%v infohash=%v", s.bucket, k, h)
+	s.cl.Get().DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
+		Key:    aws.String(k),
+		Bucket: aws.String(s.bucket),
+	})
+	k = "touch/" + h
+	// log.Infof("deleting touch bucket=%v key=%v infohash=%v", s.bucket, k, h)
 	s.cl.Get().DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
 		Key:    aws.String(k),
 		Bucket: aws.String(s.bucket),
@@ -147,7 +210,7 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 	dctx, cancel := context.WithCancel(ctx)
 	var derr error
 	for i := 0; i < c; i++ {
-		log.Infof("Start torrent cleaning thread=%v/%v infohash=%v", i, c, h)
+		// log.Infof("start torrent cleaning thread=%v/%v infohash=%v", i, c, h)
 		go func(i int) {
 			defer wg.Done()
 			for o := range ch {
@@ -158,7 +221,7 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 					Bucket: aws.String(bucket),
 				})
 				if err != nil {
-					log.WithError(err).Errorf("Failed to delete bucket=%v key=%v infohash=%v thread=%v/%v", bucket, k, h, i, c)
+					log.WithError(err).Errorf("failed to delete bucket=%v key=%v infohash=%v thread=%v/%v", bucket, k, h, i, c)
 					derr = err
 					cancel()
 					break
@@ -167,7 +230,7 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 				n++
 				mux.Unlock()
 			}
-			log.Infof("Finish torrent cleaning thread=%v/%v infohash=%v", i, c, h)
+			// log.Infof("finish torrent cleaning thread=%v/%v infohash=%v", i, c, h)
 		}(i)
 	}
 	for _, o := range list.Contents {
@@ -180,17 +243,4 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 	wg.Wait()
 	cancel()
 	return n, isTruncated, derr
-}
-
-func (s *S3Storage) DeleteTouch(ctx context.Context, h string) error {
-	k := "touch/" + h
-	log.Infof("Deleting touch bucket=%v key=%v infohash=%v", s.bucket, k, h)
-	_, err := s.cl.Get().DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
-		Key:    aws.String(k),
-		Bucket: aws.String(s.bucket),
-	})
-	if err != nil {
-		return err
-	}
-	return err
 }
