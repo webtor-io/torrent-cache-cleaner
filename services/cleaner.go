@@ -47,9 +47,10 @@ func RegisterCleanerFlags(c *cli.App) {
 		EnvVar: "PARTIAL_TORRENTS_EXPIRE_HOURS",
 	})
 	c.Flags = append(c.Flags, cli.StringFlag{
-		Name:  MAX_SIZE,
-		Usage: "Maximum cache size",
-		Value: "3T",
+		Name:   MAX_SIZE,
+		Usage:  "Maximum cache size",
+		Value:  "3T",
+		EnvVar: "MAX_SIZE",
 	})
 	c.Flags = append(c.Flags, cli.StringFlag{
 		Name:  HASH,
