@@ -208,6 +208,7 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 	var wg sync.WaitGroup
 	wg.Add(c)
 	dctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	var derr error
 	for i := 0; i < c; i++ {
 		// log.Infof("start torrent cleaning thread=%v/%v infohash=%v", i, c, h)
@@ -241,6 +242,5 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 	}
 	close(ch)
 	wg.Wait()
-	cancel()
 	return n, isTruncated, derr
 }

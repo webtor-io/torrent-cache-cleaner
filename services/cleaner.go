@@ -99,10 +99,19 @@ func NewCleaner(c *cli.Context, st *S3Storage) *Cleaner {
 func (s *Cleaner) Clean() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
 	defer cancel()
-	st := s.getStats(ctx)
-	m := s.mark(st)
-	s.sweep(ctx, m)
-	return ctx.Err()
+	err := make(chan error)
+	go func() {
+		st := s.getStats(ctx)
+		m := s.mark(st)
+		s.sweep(ctx, m)
+		err <- nil
+	}()
+	select {
+	case <-err:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func (s *Cleaner) sweep(ctx context.Context, rr []Resource) {
