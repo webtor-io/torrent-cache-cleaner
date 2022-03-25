@@ -265,7 +265,7 @@ func (s *Cleaner) getStats(ctx context.Context) []Resource {
 		}
 	}()
 	wg.Wait()
-	log.Infof("total count=%v size=%.2fG", len(rr), float64(size)/1024/1024/1024)
+	log.Infof("total count=%v size=%.2fG target size=%.2fG", len(rr), float64(size)/1024/1024/1024, float64(s.maxSize)/1024/1024/1024)
 	return rr
 }
 
