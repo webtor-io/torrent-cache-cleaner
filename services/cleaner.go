@@ -16,12 +16,14 @@ import (
 )
 
 const (
+	TIMEOUT_HOURS                 = "timeout-hours"
 	DONE_TORRENTS_EXPIRE_HOURS    = "done-torrents-expire-hours"
 	PARTIAL_TORRENTS_EXPIRE_HOURS = "partial-torrents-expire-hours"
 	TRANSCODED_EXPIRE_HOURS       = "transcoded-expire-hours"
 	MAX_SIZE                      = "max-size"
 	HASH                          = "hash"
 	FORCE                         = "force"
+	CONCURRENCY                   = "concurrency"
 )
 
 var (
@@ -29,6 +31,18 @@ var (
 )
 
 func RegisterCleanerFlags(c *cli.App) {
+	c.Flags = append(c.Flags, cli.IntFlag{
+		Name:   TIMEOUT_HOURS,
+		Usage:  "Timeout (in hours)",
+		Value:  1,
+		EnvVar: "TIMEOUT_HOURS",
+	})
+	c.Flags = append(c.Flags, cli.IntFlag{
+		Name:   TRANSCODED_EXPIRE_HOURS,
+		Usage:  "Expiration period for transcoded content (in hours)",
+		Value:  96,
+		EnvVar: "TRANSCODED_EXPIRE_HOURS",
+	})
 	c.Flags = append(c.Flags, cli.IntFlag{
 		Name:   TRANSCODED_EXPIRE_HOURS,
 		Usage:  "Expiration period for transcoded content (in hours)",
@@ -61,6 +75,12 @@ func RegisterCleanerFlags(c *cli.App) {
 		Name:  FORCE,
 		Usage: "Forces clearing",
 	})
+	c.Flags = append(c.Flags, cli.IntFlag{
+		Name:   CONCURRENCY,
+		Usage:  "Concurrency",
+		Value:  64,
+		EnvVar: "CONCURRENCY",
+	})
 }
 
 type Resource struct {
@@ -79,6 +99,8 @@ type Cleaner struct {
 	hash             string
 	force            bool
 	maxSize          int
+	concurrency      int
+	timeout          time.Duration
 }
 
 func NewCleaner(c *cli.Context, st *S3Storage) *Cleaner {
@@ -91,14 +113,16 @@ func NewCleaner(c *cli.Context, st *S3Storage) *Cleaner {
 		doneExpire:       time.Duration(c.Int(DONE_TORRENTS_EXPIRE_HOURS)) * time.Hour,
 		partialExpire:    time.Duration(c.Int(PARTIAL_TORRENTS_EXPIRE_HOURS)) * time.Hour,
 		transcodedExpire: time.Duration(c.Int(TRANSCODED_EXPIRE_HOURS)) * time.Hour,
+		timeout:          time.Duration(c.Int(TIMEOUT_HOURS)) * time.Hour,
 		maxSize:          int(maxSize),
 		hash:             c.String(HASH),
 		force:            c.Bool(FORCE),
+		concurrency:      c.Int(CONCURRENCY),
 	}
 }
 
 func (s *Cleaner) Clean() error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 	defer cancel()
 	err := make(chan error)
 	go func() {
@@ -147,7 +171,7 @@ func (s *Cleaner) sweep(ctx context.Context, rr []Resource) {
 			for r := range ch {
 				k := r.Hash
 				// log.Infof("sweep start %+v", r)
-				n, err := s.st.DeleteTorrentData(ctx, k)
+				n, err := s.st.DeleteTorrentData(ctx, k, s.concurrency)
 				if ctx.Err() != nil {
 					return
 				}
@@ -238,7 +262,7 @@ func (s *Cleaner) getStats(ctx context.Context, base string) []Resource {
 		}
 		close(prefixesCh)
 	}()
-	tc := 64
+	tc := s.concurrency
 	if len(prefixes) < tc {
 		tc = len(prefixes)
 	}

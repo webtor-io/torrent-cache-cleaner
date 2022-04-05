@@ -139,10 +139,10 @@ func (s *S3Storage) GetTouches(ctx context.Context, startAfter string, hash stri
 	return list.Contents, t, nil
 }
 
-func (s *S3Storage) DeleteTorrentData(ctx context.Context, h string) (int, error) {
+func (s *S3Storage) DeleteTorrentData(ctx context.Context, h string, cc int) (int, error) {
 	nn := 0
 	for {
-		n, t, err := s.deleteTorrentDataChunk(ctx, h)
+		n, t, err := s.deleteTorrentDataChunk(ctx, h, cc)
 		if err != nil {
 			return n, err
 		}
@@ -185,7 +185,7 @@ func (s *S3Storage) DeleteTorrentData(ctx context.Context, h string) (int, error
 	return nn, nil
 }
 
-func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, bool, error) {
+func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string, cc int) (int, bool, error) {
 	bucket := s.bucket
 	if s.bucketSpread {
 		bucket += "-" + h[0:2]
@@ -204,6 +204,12 @@ func (s *S3Storage) deleteTorrentDataChunk(ctx context.Context, h string) (int, 
 	ch := make(chan *s3.Object)
 	mux := &sync.Mutex{}
 	c := len(list.Contents)/100 + 1
+	if len(list.Contents) < c {
+		c = len(list.Contents)
+	}
+	if cc < c {
+		c = cc
+	}
 	n := 0
 	var wg sync.WaitGroup
 	wg.Add(c)
