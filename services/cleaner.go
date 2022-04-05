@@ -166,9 +166,9 @@ func (s *Cleaner) mark(rr []Resource) []Resource {
 	size := 0
 	mm := []Resource{}
 	for _, r := range rr {
-		if r.Done && !r.Transcoded && r.TouchedAt.Before(time.Now().Add(-s.doneExpire)) ||
-			!r.Done && r.TouchedAt.Before(time.Now().Add(-s.partialExpire)) ||
-			r.Transcoded && r.TouchedAt.Before(time.Now().Add(-s.transcodedExpire)) {
+		if (r.Done && !r.Transcoded && r.TouchedAt.Before(time.Now().Add(-s.doneExpire))) ||
+			(!r.Done && r.TouchedAt.Before(time.Now().Add(-s.partialExpire))) ||
+			(r.Transcoded && r.TouchedAt.Before(time.Now().Add(-s.transcodedExpire))) {
 			mm, _ = s.appendToMarked(mm, r)
 		}
 		size += r.Size
