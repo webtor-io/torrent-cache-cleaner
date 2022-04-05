@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -101,7 +102,10 @@ func (s *Cleaner) Clean() error {
 	defer cancel()
 	err := make(chan error)
 	go func() {
-		st := s.getStats(ctx)
+		st := s.getStats(ctx, "")
+		for _, r := range s.getStats(ctx, "touch/") {
+			st, _ = s.appendTo(st, r)
+		}
 		m := s.mark(st)
 		s.sweep(ctx, m)
 		err <- nil
@@ -169,7 +173,7 @@ func (s *Cleaner) mark(rr []Resource) []Resource {
 		if (r.Done && !r.Transcoded && r.TouchedAt.Before(time.Now().Add(-s.doneExpire))) ||
 			(!r.Done && r.TouchedAt.Before(time.Now().Add(-s.partialExpire))) ||
 			(r.Transcoded && r.TouchedAt.Before(time.Now().Add(-s.transcodedExpire))) {
-			mm, _ = s.appendToMarked(mm, r)
+			mm, _ = s.appendTo(mm, r)
 		}
 		size += r.Size
 	}
@@ -182,7 +186,7 @@ func (s *Cleaner) mark(rr []Resource) []Resource {
 		if r.Transcoded {
 			continue
 		}
-		if mm, ok = s.appendToMarked(mm, r); ok {
+		if mm, ok = s.appendTo(mm, r); ok {
 			size -= r.Size
 		}
 	}
@@ -190,7 +194,7 @@ func (s *Cleaner) mark(rr []Resource) []Resource {
 		if size <= s.maxSize {
 			break
 		}
-		if mm, ok = s.appendToMarked(mm, r); ok {
+		if mm, ok = s.appendTo(mm, r); ok {
 			size -= r.Size
 		}
 	}
@@ -202,7 +206,7 @@ func (s *Cleaner) mark(rr []Resource) []Resource {
 	return mm
 }
 
-func (s *Cleaner) appendToMarked(mm []Resource, r Resource) ([]Resource, bool) {
+func (s *Cleaner) appendTo(mm []Resource, r Resource) ([]Resource, bool) {
 	found := false
 	for _, m := range mm {
 		if m.Hash == r.Hash {
@@ -217,7 +221,7 @@ func (s *Cleaner) appendToMarked(mm []Resource, r Resource) ([]Resource, bool) {
 	}
 }
 
-func (s *Cleaner) getStats(ctx context.Context) []Resource {
+func (s *Cleaner) getStats(ctx context.Context, base string) []Resource {
 	ch := make(chan Resource)
 	letters := "0123456789abcdef"
 	// letters := "01
@@ -245,7 +249,7 @@ func (s *Cleaner) getStats(ctx context.Context) []Resource {
 			defer wg.Done()
 			for pr := range prefixesCh {
 				// log.Infof("starts prefix=%v worker=%v", pr, i)
-				err := s.getStatsWithPrefix(ctx, pr, ch)
+				err := s.getStatsWithPrefix(ctx, base, pr, ch)
 				if ctx.Err() != nil {
 					return
 				}
@@ -269,12 +273,12 @@ func (s *Cleaner) getStats(ctx context.Context) []Resource {
 	return rr
 }
 
-func (s *Cleaner) getStatsWithPrefix(ctx context.Context, prefix string, ch chan Resource) error {
+func (s *Cleaner) getStatsWithPrefix(ctx context.Context, base string, prefix string, ch chan Resource) error {
 	last := ""
 	mlast := ""
 	size := 0
 	for {
-		t, l, ml, si, err := s.getStatsChunk(ctx, ch, last, mlast, size, prefix)
+		t, l, ml, si, err := s.getStatsChunk(ctx, ch, last, mlast, size, base, prefix)
 		if err != nil {
 			return err
 		}
@@ -288,19 +292,20 @@ func (s *Cleaner) getStatsWithPrefix(ctx context.Context, prefix string, ch chan
 	return nil
 }
 
-func (s *Cleaner) getStatsChunk(ctx context.Context, ch chan Resource, marker string, ml string, size int, prefix string) (bool, string, string, int, error) {
-	objs, trunc, err := s.st.GetAllObjects(ctx, prefix, marker)
+func (s *Cleaner) getStatsChunk(ctx context.Context, ch chan Resource, marker string, ml string, size int, base string, prefix string) (bool, string, string, int, error) {
+	objs, trunc, err := s.st.GetAllObjects(ctx, base+prefix, marker)
 	if err != nil {
 		return trunc, "", "", 0, err
 	}
 	last := ""
 	for _, o := range objs {
-		last = *o.Key
-		i := shaExp.FindIndex([]byte(*o.Key))
+		key := strings.TrimPrefix(*o.Key, base)
+		last = key
+		i := shaExp.FindIndex([]byte(key))
 		if i == nil || i[0] != 0 {
 			continue
 		}
-		m := string(shaExp.Find([]byte(*o.Key)))
+		m := string(shaExp.Find([]byte(key)))
 		size += int(*o.Size)
 		if ml == m {
 			continue
