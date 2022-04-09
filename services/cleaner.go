@@ -126,10 +126,11 @@ func (s *Cleaner) Clean() error {
 	defer cancel()
 	err := make(chan error)
 	go func() {
-		st := s.getStats(ctx, "")
-		for _, r := range s.getStats(ctx, "touch/") {
-			st, _ = s.appendTo(st, r)
-		}
+		st := s.getStats(ctx, "touch/")
+		// st := s.getStats(ctx, "")
+		// for _, r := range s.getStats(ctx, "touch/") {
+		// 	st, _ = s.appendTo(st, r)
+		// }
 		m := s.mark(st)
 		s.sweep(ctx, m)
 		err <- nil
