@@ -44,12 +44,6 @@ func RegisterCleanerFlags(c *cli.App) {
 		EnvVar: "TRANSCODED_EXPIRE_HOURS",
 	})
 	c.Flags = append(c.Flags, cli.IntFlag{
-		Name:   TRANSCODED_EXPIRE_HOURS,
-		Usage:  "Expiration period for transcoded content (in hours)",
-		Value:  96,
-		EnvVar: "TRANSCODED_EXPIRE_HOURS",
-	})
-	c.Flags = append(c.Flags, cli.IntFlag{
 		Name:   DONE_TORRENTS_EXPIRE_HOURS,
 		Usage:  "Expiration period for completly downloaded torrents (in hours)",
 		Value:  48,
