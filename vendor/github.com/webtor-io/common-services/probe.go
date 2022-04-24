@@ -23,17 +23,19 @@ const (
 )
 
 // RegisterProbeFlags registers cli flags for Probe
-func RegisterProbeFlags(c *cli.App) {
-	c.Flags = append(c.Flags, cli.StringFlag{
-		Name:  probeHostFlag,
-		Usage: "probe listening host",
-		Value: "",
-	})
-	c.Flags = append(c.Flags, cli.IntFlag{
-		Name:  probePortFlag,
-		Usage: "probe listening port",
-		Value: 8081,
-	})
+func RegisterProbeFlags(f []cli.Flag) []cli.Flag {
+	return append(f,
+		cli.StringFlag{
+			Name:  probeHostFlag,
+			Usage: "probe listening host",
+			Value: "",
+		},
+		cli.IntFlag{
+			Name:  probePortFlag,
+			Usage: "probe listening port",
+			Value: 8081,
+		},
+	)
 }
 
 // NewProbe initializes new Probe instance
@@ -46,7 +48,7 @@ func (s *Probe) Serve() error {
 	addr := fmt.Sprintf("%s:%d", s.host, s.port)
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		return errors.Wrap(err, "Failed to probe listen to tcp connection")
+		return errors.Wrap(err, "failed to probe listen to tcp connection")
 	}
 	s.ln = ln
 	mux := http.NewServeMux()
@@ -56,7 +58,7 @@ func (s *Probe) Serve() error {
 	mux.HandleFunc("/readiness", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 	})
-	log.Infof("Serving Probe at %v", addr)
+	log.Infof("serving probe at %v", addr)
 	return http.Serve(ln, mux)
 }
 

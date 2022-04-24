@@ -30,51 +30,53 @@ var (
 	shaExp = regexp.MustCompile("[0-9a-f]{40}")
 )
 
-func RegisterCleanerFlags(c *cli.App) {
-	c.Flags = append(c.Flags, cli.IntFlag{
-		Name:   TIMEOUT_HOURS,
-		Usage:  "Timeout (in hours)",
-		Value:  1,
-		EnvVar: "TIMEOUT_HOURS",
-	})
-	c.Flags = append(c.Flags, cli.IntFlag{
-		Name:   TRANSCODED_EXPIRE_HOURS,
-		Usage:  "Expiration period for transcoded content (in hours)",
-		Value:  96,
-		EnvVar: "TRANSCODED_EXPIRE_HOURS",
-	})
-	c.Flags = append(c.Flags, cli.IntFlag{
-		Name:   DONE_TORRENTS_EXPIRE_HOURS,
-		Usage:  "Expiration period for completly downloaded torrents (in hours)",
-		Value:  48,
-		EnvVar: "DONE_TORRENTS_EXPIRE_HOURS",
-	})
-	c.Flags = append(c.Flags, cli.IntFlag{
-		Name:   PARTIAL_TORRENTS_EXPIRE_HOURS,
-		Usage:  "Expiration period for partialy downloaded torrents (in hours)",
-		Value:  12,
-		EnvVar: "PARTIAL_TORRENTS_EXPIRE_HOURS",
-	})
-	c.Flags = append(c.Flags, cli.StringFlag{
-		Name:   MAX_SIZE,
-		Usage:  "Maximum cache size",
-		Value:  "3T",
-		EnvVar: "MAX_SIZE",
-	})
-	c.Flags = append(c.Flags, cli.StringFlag{
-		Name:  HASH,
-		Usage: "Check specific hash",
-	})
-	c.Flags = append(c.Flags, cli.BoolFlag{
-		Name:  FORCE,
-		Usage: "Forces clearing",
-	})
-	c.Flags = append(c.Flags, cli.IntFlag{
-		Name:   CONCURRENCY,
-		Usage:  "Concurrency",
-		Value:  64,
-		EnvVar: "CONCURRENCY",
-	})
+func RegisterCleanerFlags(f []cli.Flag) []cli.Flag {
+	return append(f,
+		cli.IntFlag{
+			Name:   TIMEOUT_HOURS,
+			Usage:  "Timeout (in hours)",
+			Value:  1,
+			EnvVar: "TIMEOUT_HOURS",
+		},
+		cli.IntFlag{
+			Name:   TRANSCODED_EXPIRE_HOURS,
+			Usage:  "Expiration period for transcoded content (in hours)",
+			Value:  96,
+			EnvVar: "TRANSCODED_EXPIRE_HOURS",
+		},
+		cli.IntFlag{
+			Name:   DONE_TORRENTS_EXPIRE_HOURS,
+			Usage:  "Expiration period for completly downloaded torrents (in hours)",
+			Value:  48,
+			EnvVar: "DONE_TORRENTS_EXPIRE_HOURS",
+		},
+		cli.IntFlag{
+			Name:   PARTIAL_TORRENTS_EXPIRE_HOURS,
+			Usage:  "Expiration period for partialy downloaded torrents (in hours)",
+			Value:  12,
+			EnvVar: "PARTIAL_TORRENTS_EXPIRE_HOURS",
+		},
+		cli.StringFlag{
+			Name:   MAX_SIZE,
+			Usage:  "Maximum cache size",
+			Value:  "3T",
+			EnvVar: "MAX_SIZE",
+		},
+		cli.StringFlag{
+			Name:  HASH,
+			Usage: "Check specific hash",
+		},
+		cli.BoolFlag{
+			Name:  FORCE,
+			Usage: "Forces clearing",
+		},
+		cli.IntFlag{
+			Name:   CONCURRENCY,
+			Usage:  "Concurrency",
+			Value:  64,
+			EnvVar: "CONCURRENCY",
+		},
+	)
 }
 
 type Resource struct {
@@ -120,11 +122,10 @@ func (s *Cleaner) Clean() error {
 	defer cancel()
 	err := make(chan error)
 	go func() {
-		st := s.getStats(ctx, "touch/")
-		// st := s.getStats(ctx, "")
-		// for _, r := range s.getStats(ctx, "touch/") {
-		// 	st, _ = s.appendTo(st, r)
-		// }
+		st := s.getStats(ctx, "")
+		for _, r := range s.getStats(ctx, "touch/") {
+			st, _ = s.appendTo(st, r)
+		}
 		m := s.mark(st)
 		s.sweep(ctx, m)
 		err <- nil

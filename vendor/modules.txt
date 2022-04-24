@@ -1,8 +1,8 @@
 # code.cloudfoundry.org/bytefmt v0.0.0-20211005130812-5bb3c17173e5
-## explicit
+## explicit; go 1.16
 code.cloudfoundry.org/bytefmt
-# github.com/aws/aws-sdk-go v1.36.28
-## explicit
+# github.com/aws/aws-sdk-go v1.43.41
+## explicit; go 1.11
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/arn
 github.com/aws/aws-sdk-go/aws/awserr
@@ -14,6 +14,7 @@ github.com/aws/aws-sdk-go/aws/credentials
 github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds
 github.com/aws/aws-sdk-go/aws/credentials/endpointcreds
 github.com/aws/aws-sdk-go/aws/credentials/processcreds
+github.com/aws/aws-sdk-go/aws/credentials/ssocreds
 github.com/aws/aws-sdk-go/aws/credentials/stscreds
 github.com/aws/aws-sdk-go/aws/csm
 github.com/aws/aws-sdk-go/aws/defaults
@@ -39,17 +40,38 @@ github.com/aws/aws-sdk-go/private/protocol
 github.com/aws/aws-sdk-go/private/protocol/eventstream
 github.com/aws/aws-sdk-go/private/protocol/eventstream/eventstreamapi
 github.com/aws/aws-sdk-go/private/protocol/json/jsonutil
+github.com/aws/aws-sdk-go/private/protocol/jsonrpc
 github.com/aws/aws-sdk-go/private/protocol/query
 github.com/aws/aws-sdk-go/private/protocol/query/queryutil
 github.com/aws/aws-sdk-go/private/protocol/rest
+github.com/aws/aws-sdk-go/private/protocol/restjson
 github.com/aws/aws-sdk-go/private/protocol/restxml
 github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil
 github.com/aws/aws-sdk-go/service/s3
+github.com/aws/aws-sdk-go/service/sso
+github.com/aws/aws-sdk-go/service/sso/ssoiface
 github.com/aws/aws-sdk-go/service/sts
 github.com/aws/aws-sdk-go/service/sts/stsiface
-# github.com/cpuguy83/go-md2man/v2 v2.0.0
+# github.com/cpuguy83/go-md2man/v2 v2.0.1
+## explicit; go 1.11
 github.com/cpuguy83/go-md2man/v2/md2man
+# github.com/go-pg/migrations/v8 v8.1.0
+## explicit; go 1.16
+github.com/go-pg/migrations/v8
+# github.com/go-pg/pg/v10 v10.10.6
+## explicit; go 1.11
+github.com/go-pg/pg/v10
+github.com/go-pg/pg/v10/internal
+github.com/go-pg/pg/v10/internal/parser
+github.com/go-pg/pg/v10/internal/pool
+github.com/go-pg/pg/v10/orm
+github.com/go-pg/pg/v10/pgjson
+github.com/go-pg/pg/v10/types
+# github.com/go-pg/zerochecker v0.2.0
+## explicit; go 1.13
+github.com/go-pg/zerochecker
 # github.com/go-redis/redis v6.15.9+incompatible
+## explicit
 github.com/go-redis/redis
 github.com/go-redis/redis/internal
 github.com/go-redis/redis/internal/consistenthash
@@ -57,29 +79,67 @@ github.com/go-redis/redis/internal/hashtag
 github.com/go-redis/redis/internal/pool
 github.com/go-redis/redis/internal/proto
 github.com/go-redis/redis/internal/util
+# github.com/jinzhu/inflection v1.0.0
+## explicit
+github.com/jinzhu/inflection
 # github.com/jmespath/go-jmespath v0.4.0
+## explicit; go 1.14
 github.com/jmespath/go-jmespath
 # github.com/joonix/log v0.0.0-20200409080653-9c1d2ceb5f1d
-## explicit
+## explicit; go 1.12
 # github.com/konsorten/go-windows-terminal-sequences v1.0.3
 ## explicit
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
 # github.com/russross/blackfriday/v2 v2.1.0
+## explicit
 github.com/russross/blackfriday/v2
-# github.com/sirupsen/logrus v1.7.0
-## explicit
+# github.com/sirupsen/logrus v1.8.1
+## explicit; go 1.13
 github.com/sirupsen/logrus
+# github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc
+## explicit
+github.com/tmthrgd/go-hex
 # github.com/urfave/cli v1.22.5
-## explicit
+## explicit; go 1.11
 github.com/urfave/cli
-# github.com/webtor-io/common-services v0.0.0-20210118183811-6963f3b0958e
-## explicit
+# github.com/vmihailenco/bufpool v0.1.11
+## explicit; go 1.13
+github.com/vmihailenco/bufpool
+# github.com/vmihailenco/msgpack/v5 v5.3.5
+## explicit; go 1.11
+github.com/vmihailenco/msgpack/v5
+github.com/vmihailenco/msgpack/v5/msgpcode
+# github.com/vmihailenco/tagparser v0.1.2
+## explicit; go 1.13
+github.com/vmihailenco/tagparser
+github.com/vmihailenco/tagparser/internal
+github.com/vmihailenco/tagparser/internal/parser
+# github.com/vmihailenco/tagparser/v2 v2.0.0
+## explicit; go 1.15
+github.com/vmihailenco/tagparser/v2
+github.com/vmihailenco/tagparser/v2/internal
+github.com/vmihailenco/tagparser/v2/internal/parser
+# github.com/webtor-io/common-services v0.0.0-20211213162705-1bfd03e3bd75
+## explicit; go 1.15
 github.com/webtor-io/common-services
+# github.com/webtor-io/torrent-cache-cleaner v0.0.0-20220409150519-7abf93767f8f
+## explicit; go 1.15
+github.com/webtor-io/torrent-cache-cleaner/services
 # github.com/webtor-io/torrent-web-cache v0.0.0-20200507221945-57e4f25393d0
-## explicit
-# golang.org/x/sys v0.0.0-20210423082822-04245dca01da
+## explicit; go 1.14
+# go.opentelemetry.io/otel/metric v0.29.0
+## explicit; go 1.16
+# golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
+## explicit; go 1.17
+golang.org/x/crypto/pbkdf2
+# golang.org/x/sys v0.0.0-20220412211240-33da011f77ad
+## explicit; go 1.17
+golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
+# mellium.im/sasl v0.2.1
+## explicit
+mellium.im/sasl

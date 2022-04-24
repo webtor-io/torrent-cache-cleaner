@@ -18,14 +18,14 @@ ENV CGO_ENABLED=0
 ENV GOOS=linux
 
 # build the binary with debug information removed
-RUN go build -mod=vendor -ldflags '-w -s' -a -installsuffix cgo -o torrent-cache-cleaner
+RUN go build -mod=vendor -ldflags '-w -s' -a -installsuffix cgo -o cache-keeper
 
 FROM scratch
 
 # copy certs
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 # copy our static linked library
-COPY --from=build /app/torrent-cache-cleaner .
+COPY --from=build /app/cache-keeper .
 
 # run it!
-CMD ["./torrent-cache-cleaner"]
+CMD ["./cache-keeper clean"]

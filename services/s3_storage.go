@@ -26,18 +26,20 @@ const (
 	AWS_BUCKET_SPREAD = "aws-bucket-spread"
 )
 
-func RegisterS3StorageFlags(c *cli.App) {
-	c.Flags = append(c.Flags, cli.StringFlag{
-		Name:   AWS_BUCKET,
-		Usage:  "AWS Bucket",
-		Value:  "",
-		EnvVar: "AWS_BUCKET",
-	})
-	c.Flags = append(c.Flags, cli.BoolFlag{
-		Name:   AWS_BUCKET_SPREAD,
-		Usage:  "AWS Bucket Spread",
-		EnvVar: "AWS_BUCKET_SPREAD",
-	})
+func RegisterS3StorageFlags(f []cli.Flag) []cli.Flag {
+	return append(f,
+		cli.StringFlag{
+			Name:   AWS_BUCKET,
+			Usage:  "AWS Bucket",
+			Value:  "",
+			EnvVar: "AWS_BUCKET",
+		},
+		cli.BoolFlag{
+			Name:   AWS_BUCKET_SPREAD,
+			Usage:  "AWS Bucket Spread",
+			EnvVar: "AWS_BUCKET_SPREAD",
+		},
+	)
 }
 
 func NewS3Storage(c *cli.Context, cl *cs.S3Client) *S3Storage {
