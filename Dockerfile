@@ -28,4 +28,4 @@ COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /app/cache-keeper .
 
 # run it!
-CMD ["./cache-keeper clean"]
+CMD ["./cache-keeper", "clean"]
