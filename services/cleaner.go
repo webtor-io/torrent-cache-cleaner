@@ -159,12 +159,12 @@ func (s *Cleaner) sweep(ctx context.Context, rr []Resource) {
 		go func(i int) {
 			defer wg.Done()
 			for r := range ch {
-				k := r.Hash
-				// log.Infof("sweep start %+v", r)
-				n, err := s.st.DeleteTorrentData(ctx, k, s.concurrency)
 				if ctx.Err() != nil {
 					break
 				}
+				k := r.Hash
+				// log.Infof("sweep start %+v", r)
+				n, err := s.st.DeleteTorrentData(ctx, k, s.concurrency)
 				if err != nil {
 					log.WithError(err).Infof("failed to sweep %v", r)
 				} else {
@@ -272,11 +272,11 @@ func (s *Cleaner) getStats(ctx context.Context, base string) []Resource {
 		go func(i int) {
 			defer wg.Done()
 			for pr := range prefixesCh {
-				// log.Infof("starts prefix=%v worker=%v", pr, i)
-				err := s.getStatsWithPrefix(ctx, base, pr, ch)
 				if ctx.Err() != nil {
 					break
 				}
+				// log.Infof("starts prefix=%v worker=%v", pr, i)
+				err := s.getStatsWithPrefix(ctx, base, pr, ch)
 				if err != nil {
 					log.WithError(err).Error("got error")
 				}
