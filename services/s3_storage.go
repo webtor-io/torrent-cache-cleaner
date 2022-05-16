@@ -61,7 +61,7 @@ func (s *S3Storage) GetTouch(ctx context.Context, hash string) (*s3.GetObjectOut
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == s3.ErrCodeNoSuchKey {
 			return nil, nil
 		}
-		return nil, errors.Wrapf(err, "failed to get check touch")
+		return nil, errors.Wrapf(err, "failed to get check touch bucket=%v key=%v", s.bucket, key)
 	}
 	defer o.Body.Close()
 	return o, nil
@@ -78,7 +78,7 @@ func (s *S3Storage) IsDone(ctx context.Context, hash string) (bool, error) {
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == s3.ErrCodeNoSuchKey {
 			return false, nil
 		}
-		return false, errors.Wrapf(err, "failed to get done status")
+		return false, errors.Wrapf(err, "failed to get done status bucket=%v key=%v", s.bucket, key)
 	}
 	defer o.Body.Close()
 	return true, nil
@@ -95,7 +95,7 @@ func (s *S3Storage) IsTranscoded(ctx context.Context, hash string) (bool, error)
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == s3.ErrCodeNoSuchKey {
 			return false, nil
 		}
-		return false, errors.Wrapf(err, "failed to get transcoded status")
+		return false, errors.Wrapf(err, "failed to get transcoded status bucket=%v key=%v", s.bucket, key)
 	}
 	defer o.Body.Close()
 	return true, nil

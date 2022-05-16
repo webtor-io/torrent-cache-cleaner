@@ -151,12 +151,6 @@ func (s *Cleaner) sweep(ctx context.Context, rr []Resource) {
 		total += r.Size
 	}
 
-	go func() {
-		for _, r := range rr {
-			ch <- r
-		}
-		close(ch)
-	}()
 	var size uint64
 	start := time.Now()
 	var wg sync.WaitGroup
@@ -169,7 +163,7 @@ func (s *Cleaner) sweep(ctx context.Context, rr []Resource) {
 				// log.Infof("sweep start %+v", r)
 				n, err := s.st.DeleteTorrentData(ctx, k, s.concurrency)
 				if ctx.Err() != nil {
-					return
+					break
 				}
 				if err != nil {
 					log.WithError(err).Infof("failed to sweep %v", r)
@@ -180,6 +174,13 @@ func (s *Cleaner) sweep(ctx context.Context, rr []Resource) {
 			}
 		}(i)
 	}
+	for _, r := range rr {
+		if ctx.Err() != nil {
+			break
+		}
+		ch <- r
+	}
+	close(ch)
 	wg.Wait()
 }
 
@@ -254,6 +255,9 @@ func (s *Cleaner) getStats(ctx context.Context, base string) []Resource {
 	}
 	go func() {
 		for _, p := range prefixes {
+			if ctx.Err() != nil {
+				break
+			}
 			prefixesCh <- p
 		}
 		close(prefixesCh)
@@ -271,7 +275,7 @@ func (s *Cleaner) getStats(ctx context.Context, base string) []Resource {
 				// log.Infof("starts prefix=%v worker=%v", pr, i)
 				err := s.getStatsWithPrefix(ctx, base, pr, ch)
 				if ctx.Err() != nil {
-					return
+					break
 				}
 				if err != nil {
 					log.WithError(err).Error("got error")
