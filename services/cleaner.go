@@ -205,7 +205,7 @@ func (s *Cleaner) mark(rr []Resource) []Resource {
 		if size <= s.maxSize {
 			break
 		}
-		if r.Transcoded && r.Size < 1000000 {
+		if r.Transcoded || r.Size < 1000000 {
 			continue
 		}
 		if mm, ok = s.appendTo(mm, r); ok {
