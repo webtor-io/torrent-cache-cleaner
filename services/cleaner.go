@@ -202,10 +202,10 @@ func (s *Cleaner) mark(rr []Resource) []Resource {
 
 	var ok bool
 	for _, r := range rr {
-		if size <= s.maxSize && r.Size > 1000000 {
+		if size <= s.maxSize {
 			break
 		}
-		if r.Transcoded {
+		if r.Transcoded && r.Size < 1000000 {
 			continue
 		}
 		if mm, ok = s.appendTo(mm, r); ok {
