@@ -83,7 +83,7 @@ type Resource struct {
 	Hash       string
 	Done       bool
 	Transcoded bool
-	Size       int
+	Size       int64
 	TouchedAt  time.Time
 }
 
@@ -94,7 +94,7 @@ type Cleaner struct {
 	transcodedExpire time.Duration
 	hash             string
 	force            bool
-	maxSize          int
+	maxSize          int64
 	concurrency      int
 	timeout          time.Duration
 }
@@ -110,7 +110,7 @@ func NewCleaner(c *cli.Context, st *S3Storage) *Cleaner {
 		partialExpire:    time.Duration(c.Int(PARTIAL_TORRENTS_EXPIRE_HOURS)) * time.Hour,
 		transcodedExpire: time.Duration(c.Int(TRANSCODED_EXPIRE_HOURS)) * time.Hour,
 		timeout:          time.Duration(c.Int(TIMEOUT_HOURS)) * time.Hour,
-		maxSize:          int(maxSize),
+		maxSize:          int64(maxSize),
 		hash:             c.String(HASH),
 		force:            c.Bool(FORCE),
 		concurrency:      c.Int(CONCURRENCY),
@@ -145,7 +145,7 @@ func (s *Cleaner) sweep(ctx context.Context, rr []Resource) {
 		tc = len(rr)
 	}
 
-	total := 0
+	total := int64(0)
 
 	for _, r := range rr {
 		total += r.Size
@@ -188,7 +188,7 @@ func (s *Cleaner) mark(rr []Resource) []Resource {
 	sort.Slice(rr, func(i, j int) bool {
 		return rr[i].TouchedAt.Unix() < rr[j].TouchedAt.Unix()
 	})
-	size := 0
+	size := int64(0)
 	mm := []Resource{}
 	for _, r := range rr {
 		if (r.Done && !r.Transcoded && r.TouchedAt.Before(time.Now().Add(-s.doneExpire))) ||
@@ -219,7 +219,7 @@ func (s *Cleaner) mark(rr []Resource) []Resource {
 			size -= r.Size
 		}
 	}
-	total := 0
+	total := int64(0)
 	for _, m := range mm {
 		total += m.Size
 	}
@@ -253,6 +253,7 @@ func (s *Cleaner) getStats(ctx context.Context, base string) []Resource {
 			prefixes = append(prefixes, string(a)+string(b))
 		}
 	}
+	prefixes = []string{"00"}
 	go func() {
 		for _, p := range prefixes {
 			if ctx.Err() != nil {
@@ -284,7 +285,7 @@ func (s *Cleaner) getStats(ctx context.Context, base string) []Resource {
 		}(i)
 	}
 	rr := []Resource{}
-	size := 0
+	size := int64(0)
 	go func() {
 		for r := range ch {
 			log.Infof("got stats %+v", r)
@@ -300,7 +301,7 @@ func (s *Cleaner) getStats(ctx context.Context, base string) []Resource {
 func (s *Cleaner) getStatsWithPrefix(ctx context.Context, base string, prefix string, ch chan Resource) error {
 	last := ""
 	mlast := ""
-	size := 0
+	size := int64(0)
 	for {
 		t, l, ml, si, err := s.getStatsChunk(ctx, ch, last, mlast, size, base, prefix)
 		if err != nil {
@@ -316,7 +317,33 @@ func (s *Cleaner) getStatsWithPrefix(ctx context.Context, base string, prefix st
 	return nil
 }
 
-func (s *Cleaner) getStatsChunk(ctx context.Context, ch chan Resource, marker string, ml string, size int, base string, prefix string) (bool, string, string, int, error) {
+func (s *Cleaner) makeStat(ctx context.Context, m string, size int64) (*Resource, error) {
+	touch, err := s.st.GetTouch(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+	done, err := s.st.IsDone(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+	transcoded, err := s.st.IsTranscoded(ctx, m)
+	if err != nil {
+		return nil, err
+	}
+	touchedAt := time.Time{}
+	if touch != nil {
+		touchedAt = *touch.LastModified
+	}
+	return &Resource{
+		Hash:       m,
+		Size:       size,
+		Done:       done,
+		Transcoded: transcoded,
+		TouchedAt:  touchedAt,
+	}, nil
+}
+
+func (s *Cleaner) getStatsChunk(ctx context.Context, ch chan Resource, marker string, ml string, size int64, base string, prefix string) (bool, string, string, int64, error) {
 	objs, trunc, err := s.st.GetAllObjects(ctx, base+prefix, marker)
 	if err != nil {
 		return trunc, "", "", 0, err
@@ -330,36 +357,28 @@ func (s *Cleaner) getStatsChunk(ctx context.Context, ch chan Resource, marker st
 			continue
 		}
 		m := string(shaExp.Find([]byte(key)))
-		size += int(*o.Size)
+		if ml == "" {
+			ml = m
+		}
 		if ml == m {
+			size += *o.Size
 			continue
+		} else {
+			st, err := s.makeStat(ctx, ml, size)
+			if err != nil {
+				return trunc, "", "", 0, err
+			}
+			ch <- *st
+			size = *o.Size
+			ml = m
 		}
-		ml = m
-
-		touch, err := s.st.GetTouch(ctx, ml)
+	}
+	if !trunc {
+		st, err := s.makeStat(ctx, ml, size)
 		if err != nil {
 			return trunc, "", "", 0, err
 		}
-		done, err := s.st.IsDone(ctx, ml)
-		if err != nil {
-			return trunc, "", "", 0, err
-		}
-		transcoded, err := s.st.IsTranscoded(ctx, ml)
-		if err != nil {
-			return trunc, "", "", 0, err
-		}
-		touchedAt := time.Time{}
-		if touch != nil {
-			touchedAt = *touch.LastModified
-		}
-		ch <- Resource{
-			Hash:       ml,
-			Size:       size,
-			Done:       done,
-			Transcoded: transcoded,
-			TouchedAt:  touchedAt,
-		}
-		size = 0
+		ch <- *st
 	}
 
 	return trunc, last, ml, size, nil

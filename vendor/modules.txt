@@ -126,7 +126,6 @@ github.com/vmihailenco/tagparser/v2/internal/parser
 github.com/webtor-io/common-services
 # github.com/webtor-io/torrent-cache-cleaner v0.0.0-20220409150519-7abf93767f8f
 ## explicit; go 1.15
-github.com/webtor-io/torrent-cache-cleaner/services
 # github.com/webtor-io/torrent-web-cache v0.0.0-20200507221945-57e4f25393d0
 ## explicit; go 1.14
 # go.opentelemetry.io/otel/metric v0.29.0
