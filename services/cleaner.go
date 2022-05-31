@@ -195,13 +195,14 @@ func (s *Cleaner) mark(rr []Resource) []Resource {
 			(!r.Done && r.TouchedAt.Before(time.Now().Add(-s.partialExpire))) ||
 			(r.Transcoded && r.TouchedAt.Before(time.Now().Add(-s.transcodedExpire))) {
 			mm, _ = s.appendTo(mm, r)
+		} else {
+			size += r.Size
 		}
-		size += r.Size
 	}
 
 	var ok bool
 	for _, r := range rr {
-		if size <= s.maxSize {
+		if size <= s.maxSize && r.Size > 1000000 {
 			break
 		}
 		if r.Transcoded {
