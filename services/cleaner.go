@@ -253,7 +253,7 @@ func (s *Cleaner) getStats(ctx context.Context, base string) []Resource {
 			prefixes = append(prefixes, string(a)+string(b))
 		}
 	}
-	prefixes = []string{"00"}
+	// prefixes = []string{"00"}
 	go func() {
 		for _, p := range prefixes {
 			if ctx.Err() != nil {
