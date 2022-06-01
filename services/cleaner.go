@@ -374,7 +374,7 @@ func (s *Cleaner) getStatsChunk(ctx context.Context, ch chan Resource, marker st
 			ml = m
 		}
 	}
-	if !trunc {
+	if !trunc && ml != "" {
 		st, err := s.makeStat(ctx, ml, size)
 		if err != nil {
 			return trunc, "", "", 0, err
